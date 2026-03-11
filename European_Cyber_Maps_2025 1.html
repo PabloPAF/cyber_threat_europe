@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>European Cyber Threat Maps 2025</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+:root{
+  --bg:#07101c;--surface:#0c1929;--border:#132033;
+  --accent:#00c8ef;--warm:#ff6b35;--text:#ccdaec;--muted:#3d607e;
+  --C1:#E07820;--C2:#7B35B8;--C3:#b09050;--C4:#A61c1c;--C5:#0e7a67;--C6:#2c9fbf;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sora',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+header{padding:14px 24px 12px;border-bottom:1px solid var(--border);background:linear-gradient(160deg,#0a1828 0%,var(--bg) 100%)}
+.hdr-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hdr-eyebrow{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:4px}
+h1{font-size:18px;font-weight:800;color:#ddeeff;letter-spacing:-.5px;line-height:1.15}
+h1 em{color:var(--warm);font-style:normal}
+.hdr-sub{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5}
+.hdr-stats{display:flex;gap:18px;flex-shrink:0}
+.stat{text-align:center}
+.stat-n{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);line-height:1}
+.stat-l{font-size:8px;color:var(--muted);margin-top:2px;letter-spacing:.5px}
+
+/* ── CONTROLS ── */
+.ctrl-bar{padding:7px 24px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ctrl-label{font-family:'Space Mono',monospace;font-size:8.5px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.btn{padding:4px 14px;border-radius:20px;border:1px solid rgba(0,200,239,0.25);background:transparent;color:rgba(0,200,239,0.55);font-family:'Sora',sans-serif;font-size:10px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#07101c}
+.sep{color:var(--border);margin:0 3px;font-size:12px}
+
+/* ── MAIN LAYOUT ── */
+.main{display:flex;flex:1;padding:12px 24px;gap:16px;align-items:flex-start;min-height:0}
+
+/* ── LEGEND (left column, static) ── */
+.legend-panel{flex-shrink:0;width:210px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;position:sticky;top:12px}
+.leg-title{font-family:'Space Mono',monospace;font-size:18px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.leg-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.leg-item:last-child{margin-bottom:0}
+.leg-sw{width:12px;height:12px;border-radius:3px;flex-shrink:0;margin-top:2px}
+.leg-cat{font-size:13px;font-weight:700;color:#c0d4e8;line-height:1.2}
+.leg-desc{font-size:10px;color:var(--muted);line-height:1.5;margin-top:2px}
+.leg-divider{border:none;border-top:1px solid var(--border);margin:10px 0}
+.leg-note{font-size:10px;color:var(--muted);line-height:1.6}
+.leg-note strong{color:#7aabb0;display:block;margin-bottom:3px;font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.8px}
+
+/* ── MAP CARD (center) ── */
+.map-card{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-width:0}
+.map-card-hdr{padding:9px 14px 7px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:8px}
+.map-num{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:rgba(0,200,239,0.08);flex-shrink:0}
+.map-title{font-size:15px;font-weight:700;color:#b8d4ec}
+.map-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.tile-area{padding:14px;overflow:auto}
+.tile-grid{position:relative}
+
+/* ── TILES ── */
+.tile{border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:absolute;border:1px solid rgba(255,255,255,0.08);user-select:none;transition:transform .15s,box-shadow .15s,z-index 0s}
+.tile:hover{transform:scale(1.18);z-index:50!important;box-shadow:0 6px 24px rgba(0,0,0,0.7)}
+.tile-code{font-family:'Space Mono',monospace;font-weight:700;color:rgba(255,255,255,0.92);line-height:1;text-align:center}
+.tile-pct{font-family:'Space Mono',monospace;font-weight:700;color:rgba(255,255,255,0.95);background:rgba(0,0,0,0.28);border-radius:3px;padding:1px 3px;display:none;line-height:1.2}
+.tile-name{color:rgba(255,255,255,0.58);text-align:center;line-height:1.2;padding:0 2px}
+.show-pct .tile-pct{display:block}
+.show-pct .tile-name{display:none}
+
+/* ── TOOLTIP ── */
+#tip{position:fixed;background:#0b1928;border:1px solid var(--accent);border-radius:8px;padding:10px 13px;font-size:11px;color:var(--text);max-width:280px;pointer-events:none;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.8);line-height:1.5}
+.t-country{font-size:13px;font-weight:700;color:#ddeeff;margin-bottom:3px}
+.t-cat{font-size:8.5px;font-family:'Space Mono',monospace;letter-spacing:.5px;margin-bottom:6px}
+.t-row{display:flex;gap:6px;margin-top:3px;font-size:10.5px}
+.t-lbl{color:var(--muted);flex-shrink:0;min-width:60px}
+.t-val{color:#aac8e0}
+.t-pct{color:var(--accent);font-weight:700;font-family:'Space Mono',monospace}
+.t-vol{font-size:9px;color:#3d607e;margin-top:5px;padding-top:5px;border-top:1px solid #132033}
+
+/* ── SOURCES FOOTER ── */
+.sources-footer{border-top:1px solid var(--border);background:var(--surface);padding:14px 24px 16px}
+.sf-title{font-family:'Space Mono',monospace;font-size:8px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.sf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+.sf-item{display:flex;align-items:flex-start;gap:7px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;background:rgba(0,0,0,0.15);transition:border-color .15s}
+.sf-item:hover{border-color:rgba(0,200,239,0.3)}
+.sf-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.sf-txt{flex:1;min-width:0}
+.sf-org{font-size:9px;font-weight:700;color:#7aacc0;line-height:1.2}
+.sf-name{font-size:8px;color:var(--muted);line-height:1.4;margin-top:1px}
+.sf-link{font-size:7.5px;color:rgba(0,200,239,0.5);text-decoration:none;display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sf-link:hover{color:var(--accent)}
+.sf-cert-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:8px;color:#1e3a50;line-height:1.8}
+.sf-cert-row a{color:#1e4060;text-decoration:none}
+.sf-cert-row a:hover{color:rgba(0,200,239,0.4)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-row">
+    <div>
+      <div class="hdr-eyebrow">European Cyber Threat Intelligence · 2025 · 46 Countries · Data-Corrected</div>
+      <h1>Cyber Threats Drifting:   <em>      More Faster, More Furious</em></h1>
+      <p class="hdr-sub">Tile size ∝ total 2025 attack volume · Color = dominant threat category · Hover for full detail</p>
+    </div>
+    <div class="hdr-stats">
+      <div class="stat"><div class="stat-n">4,875</div><div class="stat-l">Incidents analysed<br>ENISA ETL 2025</div></div>
+      <div class="stat"><div class="stat-n">77%</div><div class="stat-l">DDoS share of<br>all EU incidents</div></div>
+      <div class="stat"><div class="stat-n">80%+</div><div class="stat-l">Social engineering<br>AI-assisted</div></div>
+      <div class="stat"><div class="stat-n">53.7%</div><div class="stat-l">Targets = NIS2<br>Essential Entities</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTROLS -->
+<div class="ctrl-bar">
+  <span class="ctrl-label">Map:</span>
+  <button class="btn active" id="btn-vol" onclick="setMap('vol')">Volume — Most Frequent</button>
+  <button class="btn" id="btn-vel" onclick="setMap('vel')">Velocity — Fastest Growing</button>
+  <span class="sep">|</span>
+  <span class="ctrl-label">Labels:</span>
+  <button class="btn active" id="btn-code" onclick="setPct(false)">Code</button>
+  <button class="btn" id="btn-pct" onclick="setPct(true)">+ %</button>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+  <!-- LEGEND (static left column) -->
+  <div class="legend-panel">
+    <div class="leg-title">Threat Categories</div>
+
+    <div class="leg-item">
+      <div class="leg-sw" style="background:var(--C1)"></div>
+      <div>
+        <div class="leg-cat">Identity &amp; Access Abuse</div>
+        <div class="leg-desc">Stealer Logs · Infostealers · MFA-Bypass · Dark Web · AI-Session Hijacking</div>
+      </div>
+    </div>
+    <div class="leg-item">
+      <div class="leg-sw" style="background:var(--C2)"></div>
+      <div>
+        <div class="leg-cat">Vulnerability &amp; Cloud Exploitation</div>
+        <div class="leg-desc">Zero-days · Unpatched Edge Devices · Cloud Misconfigs · OT/ICS Attacks</div>
+      </div>
+    </div>
+    <div class="leg-item">
+      <div class="leg-sw" style="background:var(--C3);border:1px solid rgba(180,150,50,0.35)"></div>
+      <div>
+        <div class="leg-cat">High-Impact Sabotage</div>
+        <div class="leg-desc">DDoS · Hacktivism (NoName057) · Industrial Sabotage · Wiper Malware</div>
+      </div>
+    </div>
+    <div class="leg-item">
+      <div class="leg-sw" style="background:var(--C4)"></div>
+      <div>
+        <div class="leg-cat">Extortion &amp; Exfiltration</div>
+        <div class="leg-desc">Ransomware · Double-Extortion · IP Theft · Data Breaches · RaaS</div>
+      </div>
+    </div>
+    <div class="leg-item">
+      <div class="leg-sw" style="background:var(--C5)"></div>
+      <div>
+        <div class="leg-cat">Cognitive &amp; Social Engineering</div>
+        <div class="leg-desc">AI-Phishing · Deepfake Vishing · CEO/BEC Fraud · ClickFix · Online Fraud</div>
+      </div>
+    </div>
+    <div class="leg-item">
+      <div class="leg-sw" style="background:var(--C6)"></div>
+      <div>
+        <div class="leg-cat">Ecosystem &amp; Supply Chain</div>
+        <div class="leg-desc">MSP Pivoting · Open-Source Poisoning · Partner Compromise · Cloud Risks</div>
+      </div>
+    </div>
+
+    <hr class="leg-divider">
+    <div class="leg-note">
+      <strong>Tile Size = Attack Volume</strong>
+      Proportional to total 2025 cyber incidents per country (sqrt scale). Sources: ENISA ETL 2025 country breakdown · CrowdStrike DLS victims · national CERT annual reports.
+    </div>
+    <hr class="leg-divider">
+    <div class="leg-note">
+      <strong>Top 5 by Volume (ENISA)</strong>
+      🇩🇪 DE 23.4% · 🇮🇹 IT 11.3% · 🇪🇸 ES 9.8% · 🇫🇷 FR 9.5% · 🇧🇪 BE 3.7%
+    </div>
+    
+  </div>
+
+  <!-- MAP CARD -->
+  <div class="map-card" id="card-vol">
+    <div class="map-card-hdr">
+      <div class="map-num">01</div>
+      <div>
+        <div class="map-title">Most Frequent Cyber Attacks — by Volume · 2025</div>
+        <div class="map-sub">Tile size ∝ total attack volume · Color = dominant threat category · % = share of national incidents</div>
+      </div>
+    </div>
+    <div class="tile-area"><div class="tile-grid" id="vol-grid"></div></div>
+  </div>
+
+  <div class="map-card" id="card-vel" style="display:none">
+    <div class="map-card-hdr">
+      <div class="map-num">02</div>
+      <div>
+        <div class="map-title">Fastest Growing Cyber Threats — by Velocity · 2024→2025</div>
+        <div class="map-sub">Tile size ∝ total attack volume · Color = fastest-growing threat category · % = YoY growth rate</div>
+      </div>
+    </div>
+    <div class="tile-area"><div class="tile-grid" id="vel-grid"></div></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- SOURCES FOOTER -->
+<div class="sources-footer">
+  <div class="sf-title">Primary Sources &amp; References — 2025–2026</div>
+  <div class="sf-grid" id="src-grid"></div>
+  <div class="sf-cert-row" id="cert-row"></div>
+</div>
+
+<div id="tip"></div>
+
+<script>
+// ── PALETTE ──────────────────────────────────────────────────────────────────
+var CLR=['#E07820','#7B35B8','#b09050','#A61c1c','#0e7a67','#2c9fbf'];
+var CNAME=['Identity & Access Abuse','Vulnerability & Cloud Exploitation','High-Impact Sabotage (DDoS/Hacktivism)','Extortion & Exfiltration (Ransomware)','Cognitive & Social Engineering','Ecosystem & Supply Chain'];
+
+// ── ATTACK VOLUME INDEX (0-100) ───────────────────────────────────────────────
+
+var VOL_IDX={
+  ISL:14, NOR:20, SWE:24, FIN:18,
+  IRL:18, GBR:72,
+  DNK:16, DEU:100, EST:14, LVA:13, LTU:14,
+  PRT:16, ESP:42, FRA:41, NLD:26, BEL:16, POL:36, BLR:13,
+  AND:4,  CHE:20, LUX:10, AUT:19, CZE:22, SVK:14, UKR:78,
+  MCO:4,  LIE:4,  ITA:48, SVN:11, HUN:18, ROU:24, MDA:9,
+  SMR:3,  VAT:3,  HRV:12, SRB:13, BGR:17, TUR:44,
+  BIH:9,  MNE:8,  MKD:8,  GRC:18, CYP:9,
+  ALB:8,  KOS:8,  MLT:8
+};
+
+// ── GRID LAYOUT [iso3, col, row, code, name] ──────────────────────────────────
+var GRID=[
+  ['ISL',3,0,'IS','Iceland'],
+  ['NOR',3,1,'NO','Norway'],['SWE',4,1,'SE','Sweden'],['FIN',5,1,'FI','Finland'],
+  ['IRL',0,2,'IE','Ireland'],['GBR',1,2,'GB','United Kingdom'],
+  ['DNK',3,2,'DK','Denmark'],['DEU',4,2,'DE','Germany'],
+  ['EST',5,2,'EE','Estonia'],['LVA',6,2,'LV','Latvia'],['LTU',7,2,'LT','Lithuania'],
+  ['PRT',0,3,'PT','Portugal'],['ESP',1,3,'ES','Spain'],['FRA',2,3,'FR','France'],
+  ['NLD',3,3,'NL','Netherlands'],['BEL',4,3,'BE','Belgium'],
+  ['POL',5,3,'PL','Poland'],['BLR',6,3,'BY','Belarus'],
+  ['AND',1,4,'AD','Andorra'],['CHE',2,4,'CH','Switzerland'],
+  ['LUX',3,4,'LU','Luxem bourg'],['AUT',4,4,'AT','Austria'],
+  ['CZE',5,4,'CZ','Czech Rep.'],['SVK',6,4,'SK','Slovakia'],['UKR',7,4,'UA','Ukraine'],
+  ['MCO',1,5,'MC','Monaco'],['LIE',2,5,'LI','Liecht enstein'],
+  ['ITA',3,5,'IT','Italy'],['SVN',4,5,'SI','Slovenia'],
+  ['HUN',5,5,'HU','Hungary'],['ROU',6,5,'RO','Romania'],['MDA',7,5,'MD','Moldova'],
+  ['SMR',2,6,'SM','San Marino'],['VAT',3,6,'VA','Vatican'],['HRV',4,6,'HR','Croatia'],
+  ['SRB',5,6,'RS','Serbia'],['BGR',6,6,'BG','Bulgaria'],['TUR',7,6,'TR','Turkiye'],
+  ['BIH',4,7,'BA','Bosnia'],['MNE',5,7,'ME','Monte negro'],
+  ['MKD',6,7,'MK','N.Mace donia'],['GRC',7,7,'GR','Greece'],['CYP',8,7,'CY','Cyprus'],
+  ['ALB',4,8,'AL','Albania'],['KOS',5,8,'XK','Kosovo'],['MLT',3,8,'MT','Malta']
+];
+
+// ── VOLUME THREAT DATA [cat, threat, pct] ────────────────────────────────────
+var VOL={
+  ISL:[3,'DDoS/Hacktivism (NATO member, NBCC 2025)','~67%'],
+  NOR:[3,'DDoS/Hacktivism — energy & maritime','~70%'],
+  SWE:[3,'DDoS/Hacktivism (new NATO 2024)','~65%'],
+  FIN:[3,'DDoS/Hacktivism (new NATO 2023)','~72%'],
+  IRL:[4,'Ransomware — healthcare / EU tech hub','~40%'],
+  GBR:[4,'Ransomware — #1 EU target (CrowdStrike)','~44%'],
+  DNK:[3,'DDoS/Hacktivism (NATO targeting)','~68%'],
+  DEU:[4,'Ransomware — manufacturing / industry (BSI)','~38%'],
+  EST:[3,'DDoS/State-nexus ops (Laundry Bear/RU)','~76%'],
+  LVA:[3,'DDoS/Hacktivism (NoName057)','~74%'],
+  LTU:[3,'DDoS/Hacktivism — top NoName057 target','~75%'],
+  PRT:[5,'Phishing/ClickFix (Lampion malware — Unit 42)','~58%'],
+  ESP:[4,'Ransomware — manufacturing / retail (CCN-CERT)','~40%'],
+  FRA:[4,'Ransomware — manufacturing / healthcare (ANSSI)','~42%'],
+  NLD:[3,'DDoS/Hacktivism (NoName057, NCSC-NL 2025)','~72%'],
+  BEL:[3,'DDoS/Hacktivism (NoName057, CCB Belgium)','~71%'],
+  POL:[3,'DDoS/State-nexus InfoOps (CERT Polska)','~73%'],
+  BLR:[3,'State Espionage / Disinformation Operations','~60%'],
+  AND:[5,'Phishing/BEC (financial fraud)','~55%'],
+  CHE:[3,'DDoS/Hacktivism (Davos WEF: 1,400+ attacks)','~68%'],
+  LUX:[5,'Phishing/BEC — EU financial hub (CIRCL)','~55%'],
+  AUT:[3,'DDoS/Hacktivism (pro-Russia campaigns)','~65%'],
+  CZE:[3,'DDoS/Hacktivism (NUKIB election period)','~74%'],
+  SVK:[3,'DDoS/Hacktivism (Ukraine stance controversy)','~70%'],
+  UKR:[3,'Destructive attacks / Wipers / DDoS (active war)','~62%'],
+  MCO:[5,'Phishing / Investment Fraud (HNWI targeting)','~62%'],
+  LIE:[5,'Phishing/BEC / Investment Fraud','~57%'],
+  ITA:[3,'DDoS/Hacktivism (CERT-EU multi-campaign 2025)','~64%'],
+  SVN:[3,'DDoS/Hacktivism (ENISA-documented EU wave)','~68%'],
+  HUN:[1,'Infostealers / AutoIt malware (CERT-EU May 2025)','~52%'],
+  ROU:[3,'DDoS/Hacktivism (NoName057 election period)','~71%'],
+  MDA:[3,'DDoS / Election Interference (CERT-EU Sept 2025)','~70%'],
+  SMR:[5,'Phishing (Italian threat landscape overlap)','~60%'],
+  VAT:[2,'Targeted Espionage / Diplomatic Intrusion','~55%'],
+  HRV:[3,'DDoS/Hacktivism (NATO member targeting)','~69%'],
+  SRB:[3,'DDoS/Hacktivism (Kosovo-Serbia tensions)','~68%'],
+  BGR:[3,'DDoS/Hacktivism (NoName057 campaigns)','~73%'],
+  TUR:[3,'DDoS/Hacktivism (crossroads geopolitics)','~69%'],
+  BIH:[3,'DDoS/Hacktivist groups (ethnic / pro-RU)','~68%'],
+  MNE:[3,'DDoS/Hacktivism (post-CNT attack legacy)','~67%'],
+  MKD:[3,'DDoS/Hacktivism (geopolitical factions)','~66%'],
+  GRC:[3,'DDoS/Hacktivism (GR-TR geopolitical tensions)','~70%'],
+  CYP:[5,'Phishing/BEC / Financial Fraud (financial hub)','~58%'],
+  ALB:[3,'DDoS/Hacktivism (NATO-aspirant state)','~72%'],
+  KOS:[3,'DDoS/Hacktivism (Kosovo-Serbia conflict)','~71%'],
+  MLT:[5,'Phishing / CEO Fraud (iGaming hub)','~60%']
+};
+
+// ── VELOCITY THREAT DATA [cat, threat, pct] ───────────────────────────────────
+var VEL={
+  ISL:[5,'AI-enhanced Phishing — financial sector','+30%'],
+  NOR:[4,'Ransomware — energy / maritime (NSM Norway)','+38%'],
+  SWE:[4,'Ransomware — #1 Nordic 49.52% share (SOCRadar)','+49%'],
+  FIN:[5,'AI-enhanced Phishing / ClickFix (38.4% Nordic)','+43%'],
+  IRL:[6,'Supply Chain via cloud / SaaS providers','+50%'],
+  GBR:[5,'AI-Vishing (SCATTERED SPIDER / Holy League)','+48%'],
+  DNK:[1,'Compromised credentials / Infostealers (28.77%)','+35%'],
+  DEU:[2,'China espionage (Ink Dragon) / Iran spearphishing','+45%'],
+  EST:[2,'Critical infrastructure / Undersea cable targeting','+52%'],
+  LVA:[2,'State-nexus espionage (Laundry Bear / Russia)','+45%'],
+  LTU:[2,'Russian APT espionage — gov & military (NKSC)','+43%'],
+  PRT:[2,'Vulnerability exploitation — public sector','+42%'],
+  ESP:[5,'AI-Phishing / AI-Vishing (CrowdStrike primary)','+46%'],
+  FRA:[5,'AI-Vishing / AI-Phishing (80%+ AI-aided)','+47%'],
+  NLD:[2,'State-nexus espionage (Laundry Bear / NCSC-NL)','+46%'],
+  BEL:[6,'Supply Chain / Third-party breaches (CCB)','+45%'],
+  POL:[1,'Infostealers / Credential breaches (CERT Polska)','+48%'],
+  BLR:[5,'AI-Phishing / Hybrid Influence Operations','+30%'],
+  AND:[1,'Infostealers / Dark-web credential sales','+28%'],
+  CHE:[4,'Ransomware — financial / SME sectors (NCSC-CH)','+42%'],
+  LUX:[4,'Ransomware — investment funds / services (CIRCL)','+40%'],
+  AUT:[4,'Ransomware — Akira / BlackBasta (CERT.at)','+40%'],
+  CZE:[2,'Chinese-tech vulnerability exploitation (NUKIB)','+48%'],
+  SVK:[4,'Ransomware — public admin / healthcare (SK-CERT)','+40%'],
+  UKR:[2,'ICS/OT targeting — energy & telecom (CERT-UA)','+55%'],
+  MCO:[1,'HNWI credential theft / Account takeover','+30%'],
+  LIE:[1,'Infostealers — financial sector credentials','+32%'],
+  ITA:[4,'Ransomware — airports / transport (MUSE/Collins)','+44%'],
+  SVN:[5,'AI-enhanced Phishing & ClickFix (SI-CERT)','+35%'],
+  HUN:[3,'DDoS / Geopolitical hacktivism growth','+38%'],
+  ROU:[4,'Ransomware — BitLocker water agency Dec 2025','+52%'],
+  MDA:[5,'Disinformation / Russian Influence Ops','+48%'],
+  SMR:[4,'Ransomware — Italian-adjacent RaaS operators','+28%'],
+  VAT:[5,'Diplomatic Spear-Phishing campaigns','+25%'],
+  HRV:[4,'Ransomware — public sector targeting (CERT HR)','+42%'],
+  SRB:[2,'Vulnerability exploitation / State-linked intrusions','+35%'],
+  BGR:[1,'Infostealers / Lumma / Dark-web exposure','+38%'],
+  TUR:[1,'Lumma infostealer / Credential theft (BTK/USOM)','+44%'],
+  BIH:[5,'AI-enhanced Phishing campaigns','+32%'],
+  MNE:[4,'Ransomware — public admin / energy sector','+42%'],
+  MKD:[5,'AI-enhanced Phishing campaigns','+30%'],
+  GRC:[4,'Ransomware — shipping & logistics sector','+37%'],
+  CYP:[4,'Ransomware — professional services / shipping','+35%'],
+  ALB:[4,'Ransomware (RaaS proliferation)','+35%'],
+  KOS:[5,'AI-Phishing / Financial Fraud (AKSK)','+28%'],
+  MLT:[1,'Credential theft — gaming / fintech platforms','+35%']
+};
+
+// ── SOURCES DATA ──────────────────────────────────────────────────────────────
+var SOURCES=[
+  {org:'ENISA',name:'Threat Landscape 2025 (ETL 2025)',url:'https://www.enisa.europa.eu/publications/enisa-threat-landscape-2025',color:'#1565C0',note:'4,875 incidents Jul 2024–Jun 2025 · country % breakdown'},
+  {org:'CrowdStrike',name:'2025 European Threat Landscape Report',url:'https://www.crowdstrike.com/en-us/resources/reports/2025-european-threat-landscape-report/',color:'#B71C1C',note:'2,100+ DLS victims · nation-state actors · UK #1 target'},
+  {org:'CERT-EU',name:'Cyber Briefs 25-01 to 26-01',url:'https://cert.europa.eu/publications/threat-intelligence/',color:'#00695C',note:'Monthly EU-institution threat intelligence 2025'},
+  {org:'Eye Security',name:'State of Cyber Incidents 2026 (Jan 2026)',url:'https://www.eye.security/trend-report-the-state-of-cyber-incidents-in-europe-2026',color:'#4A148C',note:'630 investigated incidents · BEC 70% · MFA bypass 62%'},
+  {org:'WEF / Accenture',name:'Global Cybersecurity Outlook 2026',url:'https://www.weforum.org/publications/global-cybersecurity-outlook-2026/',color:'#1565C0',note:'Jan 17 2026 · 94% cite AI as #1 driver of change'},
+  {org:'Allianz',name:'Risk Barometer 2026 (Jan 2026)',url:'https://commercial.allianz.com/news-and-insights/reports/allianz-risk-barometer.html',color:'#1B5E20',note:'Cyber #1 business risk 5th year running · 3,338 experts'},
+  {org:'Europol',name:'EU-SOCTA 2025',url:'https://www.europol.europa.eu/cms/sites/default/files/documents/EU-SOCTA-2025.pdf',color:'#E65100',note:'Mar 18 2025 · Cyber #1 priority organised crime category'},
+  {org:'Link11',name:'European Cyber Report 2025 + Trends 2026',url:'https://www.link11.com/en/european-cyber-report',color:'#006064',note:'+225% DDoS H1 2025 · DDoS-as-a-Service surge · 2026 forecast'},
+  {org:'SOCRadar',name:'Europe & Nordic Threat Landscape 2025',url:'https://socradar.io/resources/report/europe-threat-landscape-report-2025/',color:'#880E4F',note:'Dark web exposure · finance 22.8% · country rankings'},
+  {org:'IBM / X-Force',name:'Threat Intelligence Index 2025',url:'https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/2025-threat-intelligence-index',color:'#1A237E',note:'Valid credentials 30% of intrusions · infostealers +84%'},
+  {org:'Fortinet / FortiGuard',name:'Global Threat Landscape Report 2025',url:'https://www.fortinet.com/resources/reports/threat-landscape-report',color:'#BF360C',note:'36,000 scans/sec · cloud lateral movement · OT surge'},
+  {org:'Cyfirma',name:'Annual Industries Report 2025 + Finance Q1 2026',url:'https://www.cyfirma.com/research/cyfirma-annual-industries-report/',color:'#4E342E',note:'13 industries · LockBit3/RansomHub lead · finance #1 APT'},
+  {org:'PwC',name:'Global Digital Trust Insights 2025',url:'https://www.pwc.com/gx/en/issues/cybersecurity/global-digital-trust-insights.html',color:'#E65100',note:'Only 2% fully resilient · avg breach $3.32M · GenAI risk #1'},
+  {org:'Gartner',name:'Top Cybersecurity Trends 2025 + 2026',url:'https://www.gartner.com/en/newsroom/press-releases/2025-03-03-gartner-identifiesthe-top-cybersecurity-trends-for-2025',color:'#37474F',note:'$240B spend 2026 · agentic AI · post-quantum migration'},
+  {org:'NETSCOUT',name:'DDoS Threat Intelligence Report H1 2025',url:'https://www.netscout.com/threatreport/',color:'#1B5E20',note:'Record EU DDoS volumes · IT/FR/NL most targeted'},
+  {org:'Cyberint',name:'Europe Threat Landscape 2024–2025',url:'https://e.cyberint.com/hubfs/Europe%20Threat%20Landscape.pdf',color:'#880E4F',note:'RaaS proliferation · MaaS growth · AI-enhanced phishing'},
+];
+
+var CERTS=[
+  {label:'BSI (DE)',url:'https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Publikationen/Lageberichte/Lagebericht2025.html'},
+  {label:'ANSSI (FR)',url:'https://cert.ssi.gouv.fr/'},
+  {label:'NCSC (UK)',url:'https://www.ncsc.gov.uk/annual-review'},
+  {label:'DNSC (RO)',url:'https://dnsc.ro/citeste/rapoarte'},
+  {label:'RIA/CERT-EE',url:'https://www.ria.ee/en/what-expect-cyberspace-2026'},
+  {label:'NKSC (LT)',url:'https://www.nksc.lt/en/'},
+  {label:'CERT.lv (LV)',url:'https://www.cert.lv/en/'},
+  {label:'CERT.pl (PL)',url:'https://cert.pl/raporty-cert-polska/'},
+  {label:'NCSC-NL',url:'https://www.ncsc.nl/actueel/whitepapers/2025/09/16/cybersecuritybeeld-nederland-2025'},
+  {label:'NSM (NO)',url:'https://nsm.no/aktuelt/nsms-rapporter'},
+  {label:'NCSC-SE',url:'https://www.ncsc.se/publikationer/'},
+  {label:'BTK/USOM (TR)',url:'https://www.btk.gov.tr/siber-guvenlik/'},
+  {label:'CERT-UA',url:'https://cert.gov.ua/'},
+  {label:'NUKIB (CZ)',url:'https://nukib.gov.cz/en/infoservis/publications/'},
+  {label:'CCN-CERT (ES)',url:'https://www.ccn-cert.cni.es/es/informes/informes-ccn-cert-publicos.html'},
+  {label:'CERT.at (AT)',url:'https://www.cert.at/de/berichte/jahresbericht/'},
+  {label:'CCB (BE)',url:'https://ccb.belgium.be/en/publications'},
+  {label:'SI-CERT (SI)',url:'https://www.si-cert.si/porocila/'},
+  {label:'SK-CERT (SK)',url:'https://www.sk-cert.sk/en/publications/index.html'},
+  {label:'CIRCL (LU)',url:'https://www.circl.lu/pub/'},
+  {label:'CERT HR',url:'https://www.cert.hr/godisnje-izvjesce/'},
+  {label:'NCSC-FI',url:'https://www.traficom.fi/fi/viestinta/kyberturvallisuus/ncsc-fi-julkaisut'},
+  {label:'CFCS (DK)',url:'https://www.cfcs.dk/en/threats/threat-assessments/'},
+  {label:'ACN (IT)',url:'https://www.acn.gov.it/portale/it/relazioni-annuali'},
+];
+
+// ── RENDER SOURCES ─────────────────────────────────────────────────────────────
+(function(){
+  var sg=document.getElementById('src-grid');
+  SOURCES.forEach(function(s){
+    var d=document.createElement('div');
+    d.className='sf-item';
+    d.innerHTML='<div class="sf-dot" style="background:'+s.color+'"></div>'
+      +'<div class="sf-txt">'
+      +'<div class="sf-org">'+s.org+'</div>'
+      +'<div class="sf-name">'+s.name+'</div>'
+      +'<a class="sf-link" href="'+s.url+'" target="_blank" rel="noopener">'+s.url.replace('https://','')+'</a>'
+      +'<div class="sf-name" style="color:#2a5060;margin-top:2px">'+s.note+'</div>'
+      +'</div>';
+    sg.appendChild(d);
+  });
+
+  var cr=document.getElementById('cert-row');
+  cr.innerHTML='<strong style="color:#2a5575;font-size:8px;font-family:\'Space Mono\',monospace;letter-spacing:.8px;display:block;margin-bottom:4px">NATIONAL CERTs &amp; AUTHORITIES</strong>'
+    +CERTS.map(function(c){
+      return '<a href="'+c.url+'" target="_blank" rel="noopener">'+c.label+'</a>';
+    }).join(' &nbsp;·&nbsp; ');
+})();
+
+// ── TILE SIZING ────────────────────────────────────────────────────────────────
+var MAX_VOL=100; // Germany = 100
+var SZ_MIN=28, SZ_MAX=96; // px range
+function getTileSize(iso){
+  var v=VOL_IDX[iso]||5;
+  // sqrt scale so area ∝ volume
+  return Math.round(SZ_MIN+(SZ_MAX-SZ_MIN)*Math.sqrt(v/MAX_VOL));
+}
+
+// ── BUILD GRID ─────────────────────────────────────────────────────────────────
+var currentMap='vol', showPct=false;
+
+function buildGrid(id,data){
+  var el=document.getElementById(id);
+  el.innerHTML='';
+  var CELL=92, GAP=5; // grid cell size (centers spaced by CELL+GAP)
+  var maxC=0, maxR=0;
+  GRID.forEach(function(g){if(g[1]>maxC)maxC=g[1];if(g[2]>maxR)maxR=g[2];});
+
+  var W=(maxC+1)*(CELL+GAP)+GAP;
+  var H=(maxR+1)*(CELL+GAP)+GAP;
+  el.style.cssText='width:'+W+'px;height:'+H+'px';
+
+  // Sort by size descending so small tiles render on top (better hover)
+  var sorted=GRID.slice().sort(function(a,b){
+    return (VOL_IDX[b[0]]||5)-(VOL_IDX[a[0]]||5);
+  });
+
+  sorted.forEach(function(g){
+    var iso=g[0],col=g[1],row=g[2],code=g[3],name=g[4];
+    var d=data[iso]; if(!d) return;
+    var cat=d[0], threat=d[1], pct=d[2];
+    var volIdx=VOL_IDX[iso]||5;
+    var sz=getTileSize(iso);
+
+    // Center of this grid cell
+    var cx=col*(CELL+GAP)+GAP+CELL/2;
+    var cy=row*(CELL+GAP)+GAP+CELL/2;
+    var x=Math.round(cx-sz/2);
+    var y=Math.round(cy-sz/2);
+
+    var tile=document.createElement('div');
+    tile.className='tile';
+
+    // Font sizes scale with tile
+    var fCode=Math.max(13,Math.min(19,Math.round(sz*0.145)));
+    var fName=Math.max(10,Math.min(12,Math.round(sz*0.095)));
+    var fPct =Math.max(10,Math.min(13,Math.round(sz*0.11)));
+
+    tile.style.cssText=[
+      'left:'+x+'px','top:'+y+'px',
+      'width:'+sz+'px','height:'+sz+'px',
+      'background:'+CLR[cat-1],
+      'z-index:'+Math.round(100-volIdx)
+    ].join(';');
+
+    tile.innerHTML=
+      '<div class="tile-code" style="font-size:'+fCode+'px">'+code+'</div>'
+      +'<div class="tile-name" style="font-size:'+fName+'px">'+name+'</div>'
+      +'<div class="tile-pct" style="font-size:'+fPct+'px">'+pct+'</div>';
+
+    tile.onmouseenter=function(e){tipShow(e,name,cat,threat,pct,volIdx)};
+    tile.onmousemove=tipMove;
+    tile.onmouseleave=tipHide;
+    el.appendChild(tile);
+  });
+
+  if(showPct)el.classList.add('show-pct');
+  else el.classList.remove('show-pct');
+}
+
+// ── TOOLTIP ────────────────────────────────────────────────────────────────────
+var tipEl=document.getElementById('tip');
+function tipShow(e,name,cat,threat,pct,volIdx){
+  var ml=currentMap==='vol'?'Volume share':'YoY growth';
+  var tl=currentMap==='vol'?'Main threat':'Growing threat';
+  var relVol=Math.round(volIdx);
+  tipEl.innerHTML=
+    '<div class="t-country">'+name+'</div>'
+    +'<div class="t-cat" style="color:'+CLR[cat-1]+'">'+CNAME[cat-1]+'</div>'
+    +'<div class="t-row"><span class="t-lbl">'+tl+':</span><span class="t-val">'+threat+'</span></div>'
+    +'<div class="t-row"><span class="t-lbl">'+ml+':</span><span class="t-pct">'+pct+'</span></div>'
+    +'<div class="t-vol">Attack volume index: '+relVol+'/100 · DE=100 (ENISA ETL 2025)</div>';
+  tipEl.style.display='block';
+  tipMove(e);
+}
+function tipMove(e){
+  var x=e.clientX+14,y=e.clientY-10,w=tipEl.offsetWidth,h=tipEl.offsetHeight;
+  tipEl.style.left=(x+w>window.innerWidth?x-w-28:x)+'px';
+  tipEl.style.top=(y+h>window.innerHeight?y-h:y)+'px';
+}
+function tipHide(){tipEl.style.display='none';}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+function setMap(m){
+  currentMap=m;
+  document.getElementById('card-vol').style.display=m==='vol'?'':'none';
+  document.getElementById('card-vel').style.display=m==='vel'?'':'none';
+  document.getElementById('btn-vol').classList.toggle('active',m==='vol');
+  document.getElementById('btn-vel').classList.toggle('active',m==='vel');
+}
+function setPct(v){
+  showPct=v;
+  document.getElementById('btn-code').classList.toggle('active',!v);
+  document.getElementById('btn-pct').classList.toggle('active',v);
+  ['vol-grid','vel-grid'].forEach(function(id){
+    var g=document.getElementById(id);
+    if(v)g.classList.add('show-pct');else g.classList.remove('show-pct');
+  });
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildGrid('vol-grid',VOL);
+buildGrid('vel-grid',VEL);
+</script>
+</body>
+</html>
